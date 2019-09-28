@@ -1,4 +1,4 @@
-#
+##
 # Question 1
 # ==========
 
@@ -38,7 +38,7 @@ freq<-function(a,s,x){
   1/(s**a*gamma(a))*x**(a-1)*exp(-x/s)
 }
 
-# Remarque: on ici codé littéralement les [log-]densités, mais on aurait aussi
+# Remarque: on a ici codé littéralement les [log-]densités, mais on aurait aussi
 # pu utiliser de façon équivalente la fonction dgamma de R
 
 # Estimation : on cherche numériquement le minimum de nlogvrais
