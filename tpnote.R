@@ -1,13 +1,16 @@
 
-#1 chargement des fichiers 
+# Question 1
+# ==========
+
+# Chargement des données
 velocite<-read.csv(file = "whales.csv",header =FALSE,dec=".")$V1
-#velocite
 
 
-#Représentation de l'histogramme
-
+# Représentation de l'histogramme
+# Ajuster la largeur d'aggrégation peut changer fortement
+# l'apparence de la distribution
 hist(velocite)
-
+hist(velocite, breaks=18)
 
 nlogvrais=function(theta,x=velocite){
 a<-theta[1]
@@ -22,7 +25,7 @@ freq<-function(a,s,x){
 }
 
 mle<-optim(c(1,2),nlogvrais)
-hist(velocite,freq = FALSE)
+hist(velocite,breaks=18,freq = FALSE)
 curve(freq(mle$par[1],mle$par[2],x),from =0.01,to=5,add=T,col="red")
 
 
@@ -42,10 +45,9 @@ rmle<-function(){
 bootstrap<-replicate(1000,rmle())
 
 
-hist(bootstrap[1,])
+hist(bootstrap[1,], main='Distribution bootstrap (shape)', xlab='shape (MLE)')
+hist(bootstrap[2,], main='Distribution bootstrap (scale)', xlab='scale (MLE)')
 
-
-hist(bootstrap[2,])
 
 et1<-sd(bootstrap[1,])
 et1
