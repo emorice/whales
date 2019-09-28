@@ -1,4 +1,4 @@
-
+#
 # Question 1
 # ==========
 
@@ -101,10 +101,9 @@ cat('\n')
 
 # Question 3
 # ==========
-
 # On construit des intervalles de confiance gaussiens symétriques à 5% de risque
 # à partir des écarts-types estimés :
-cat('Intervalles de confiance bootstrap à 95%\n')
+cat('Intervalles de confiance bootstrap à 95% (via estimation gaussienne)\n')
 c(shape=c(
 	#borne inférieure
 	lower=(mle$par[1]-qnorm(0.975)*et1),
@@ -120,12 +119,20 @@ c(shape=c(
   )
 cat('\n')
 
+# Intervalles empiriques
+cat('Intervalles de confiance bootstrap à 95% (complètement non-paramétriques)\n')
+cat('Shape\n')
+quantile(bootstrap[1,], c(0.025, 0.975)) - mean(bootstrap[1,]) + mle$par[1]
+cat('Scale\n')
+quantile(bootstrap[2,], c(0.025, 0.975)) - mean(bootstrap[2,]) + mle$par[2]
+cat('\n')
+
 # Question 4
 # ==========
 
 # On estime l'information de Fischer en moyennant la hessienne de la
 # vraisemblance au point du MLE sur le jeu de données.
-# Ici, on calcule numériquemant la hessienne
+# Ici, on calcule numériquement la hessienne
 
 library(pracma)
 Ifisher=function(x=velocite){
@@ -156,7 +163,7 @@ C = solve(If)/length(velocite)
 C
 cat('\n')
 
-cat('Écarts-type marginaux estimés\n')
+cat('Écarts-type marginaux estimés pour les EMV de façon classique\n')
 c(shape=sqrt(C[1,1]), scale=sqrt(C[2,2]))
 cat('\n')
 
@@ -165,3 +172,14 @@ cat('\n')
 #library(stats4)
 #fit = mle(function(shape, scale) -sum(log(dgamma(velocite, shape=shape, scale=scale))), list(shape=1, scale=1))
 #summary(fit)
+
+# Autres
+# ======
+# Normalité des bootsraps
+library(moments)
+qqnorm(bootstrap[1,])
+qqline(bootstrap[1,])
+#skewness(bootstrap[1,])
+qqnorm(bootstrap[2,])
+qqline(bootstrap[2,])
+#skewness(bootstrap[2,])
