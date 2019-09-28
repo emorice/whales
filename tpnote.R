@@ -38,6 +38,9 @@ freq<-function(a,s,x){
   1/(s**a*gamma(a))*x**(a-1)*exp(-x/s)
 }
 
+# Remarque: on ici codé littéralement les [log-]densités, mais on aurait aussi
+# pu utiliser de façon équivalente la fonction dgamma de R
+
 # Estimation : on cherche numériquement le minimum de nlogvrais
 # Les parametres initiaux sont choisi arbitrairement pour donner une
 # approximation initiale de la bonne forme
@@ -52,11 +55,19 @@ cat("Valeurs obtenues par MLE\n")
 c(shape=mle$par[1], scale=mle$par[2])
 cat('\n')
 
+# Variante plus compacte avec les built-in de R:
+#mle_R<-optim(c(1,2),function(t) -sum(log(dgamma(velocite, shape=t[1], scale=t[2]))))
+#mle_R
+
 # Diagnostiques
 ## Histogramme + fit
 hist(velocite,breaks=18,freq = FALSE)
 curve(freq(mle$par[1],mle$par[2],x),from =0.01,to=5,add=T,col="red")
+#curve(dgamma(shape=mle$par[1],scale=mle$par[2],x=x),from =0.01,to=5,add=T,col="blue")
+
 ## QQ-plot
+# Ici, recoder les quantiles de la loi gamma est peu pratique, on a donc utilisé
+# qgamma
 qqplot(qgamma(ppoints(500),shape=mle$par[1],scale=mle$par[2]),y=velocite)
 qqline(y=velocite, distribution=function(p) qgamma(p,shape=mle$par[1],scale=mle$par[2]))
 
@@ -148,3 +159,9 @@ cat('\n')
 cat('Écarts-type marginaux estimés\n')
 c(shape=sqrt(C[1,1]), scale=sqrt(C[2,2]))
 cat('\n')
+
+# Il est bien sûr possible d'obtenir ces résultats plus directement avec les
+# paquets R adaptés:
+#library(stats4)
+#fit = mle(function(shape, scale) -sum(log(dgamma(velocite, shape=shape, scale=scale))), list(shape=1, scale=1))
+#summary(fit)
