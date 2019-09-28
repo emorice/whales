@@ -42,7 +42,7 @@ freq<-function(a,s,x){
 # pu utiliser de façon équivalente la fonction dgamma de R
 
 # Estimation : on cherche numériquement le minimum de nlogvrais
-# Les parametres initiaux sont choisi arbitrairement pour donner une
+# Les parametres initiaux sont choisis arbitrairement pour donner une
 # approximation initiale de la bonne forme
 # La méthode d'optimisation par défaut utilisée est une méthode boîte noire de
 # Nelder-Mead qui ne recourt pas aux dérivées de la fonction, elle est assez peu
@@ -93,8 +93,8 @@ hist(bootstrap[2,], main='Distribution bootstrap (scale)', xlab='scale (MLE)')
 
 # Evaluation des écart-types bootstrap
 et1<-sd(bootstrap[1,])
-et2<<-sd(bootstrap[2,])
-cat('Écarts-types des deux distributions des estimateurs par bootstrap\n')
+et2<-sd(bootstrap[2,])
+cat('Écarts-type des deux distributions des estimateurs par bootstrap\n')
 c(shape=et1, scale=et2)
 cat('\n')
 
@@ -164,8 +164,17 @@ C
 cat('\n')
 
 cat('Écarts-type marginaux estimés pour les EMV de façon classique\n')
-c(shape=sqrt(C[1,1]), scale=sqrt(C[2,2]))
+et_class = c(shape=sqrt(C[1,1]), scale=sqrt(C[2,2]))
+et_class
 cat('\n')
+cat('Intervalles associés\n')
+c(shape=
+  qnorm(c(0.025, 0.975), mean=mle$par[1], sd=et_class[1]),
+  scale=
+  qnorm(c(0.025, 0.975), mean=mle$par[2], sd=et_class[2])
+  )
+cat('\n')
+
 
 # Il est bien sûr possible d'obtenir ces résultats plus directement avec les
 # paquets R adaptés:
