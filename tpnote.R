@@ -12,27 +12,58 @@ velocite<-read.csv(file = "whales.csv",header =FALSE,dec=".")$V1
 hist(velocite)
 hist(velocite, breaks=18)
 
+# On définit la fonction à optimiser :
+# L'opposé de la log-vraisemblance
+# Le parametre est recodé dans un vecteur c(shape, scale)
 nlogvrais=function(theta,x=velocite){
-a<-theta[1]
-s<-theta[2]
-sum(a*log(s)+lgamma(a) -(a-1)*log(x)+x/s)
+	a<-theta[1]
+	s<-theta[2]
+	# Stabilisation: il est assez peu pratique d'imposer aux méthodes
+	# d'optimisation de ne donner que des valeurs positives aux paramètres,
+	# on "clippe" donc les valeurs interdites en entrée. Bien sûr, si une
+	# méthode d'optimisation ressort des valeurs négatives, il faudra
+	# comprendre que l'algorithme a divergé.
+	# Les autres solutions consisteraient à changer le paramétrage pour
+	# travailler avec le log des paramètres, ou à choisir des algorithmes
+	# d'optimisation qui acceptent des contraintes en entrée.
+	if(a <= 0)
+		a = 1e-7
+	if(s <= 0)
+		s = 1e-7
+	sum(a*log(s)+lgamma(a) -(a-1)*log(x)+x/s)
 }
 
+# On definit au passage la densité associée
 freq<-function(a,s,x){
   1/(s**a*gamma(a))*x**(a-1)*exp(-x/s)
-  
-  
 }
 
+# Estimation : on cherche numériquement le minimum de nlogvrais
+# Les parametres initiaux sont choisi arbitrairement pour donner une
+# approximation initiale de la bonne forme
+# La méthode d'optimisation par défaut utilisée est une méthode boîte noire de
+# Nelder-Mead qui ne recourt pas aux dérivées de la fonction, elle est assez peu
+# efficace, mais robuste et suffit largement pour la taille des données
+# considérées ici.
+
 mle<-optim(c(1,2),nlogvrais)
+
+cat("Valeurs obtenues par MLE\n")
+c(shape=mle$par[1], scale=mle$par[2])
+cat('\n')
+
+# Diagnostiques
+## Histogramme + fit
 hist(velocite,breaks=18,freq = FALSE)
 curve(freq(mle$par[1],mle$par[2],x),from =0.01,to=5,add=T,col="red")
-
-
+## QQ-plot
 qqplot(qgamma(ppoints(500),shape=mle$par[1],scale=mle$par[2]),y=velocite)
 qqline(y=velocite, distribution=function(p) qgamma(p,shape=mle$par[1],scale=mle$par[2]))
 
+# Question 2
+# ==========
 
+# On définit une étape du bootstrap : rééchantillonage et MLE.
 rmle<-function(){
   rvelocite<-sample(x=velocite,size = length(velocite),replace =T)
 
@@ -42,45 +73,78 @@ rmle<-function(){
   
 }
 
+# Puis on l'exécute un bon nombre de fois
 bootstrap<-replicate(1000,rmle())
 
-
+# Histogrammes des marginales
 hist(bootstrap[1,], main='Distribution bootstrap (shape)', xlab='shape (MLE)')
 hist(bootstrap[2,], main='Distribution bootstrap (scale)', xlab='scale (MLE)')
 
-
+# Evaluation des écart-types bootstrap
 et1<-sd(bootstrap[1,])
-et1
 et2<<-sd(bootstrap[2,])
-et2
-
-#borne inférieur
-(mle$par[1]-qnorm(0.975)*et1)
-
-#borne supérieur
-(mle$par[1]+qnorm(0.975)*et1)
-
-#borne inférieur
-(mle$par[2]-qnorm(0.975)*et2)
-#borne supérieur
-(mle$par[2]+qnorm(0.975)*et2)
+cat('Écarts-types des deux distributions des estimateurs par bootstrap\n')
+c(shape=et1, scale=et2)
+cat('\n')
 
 
+# Question 3
+# ==========
+
+# On construit des intervalles de confiance gaussiens symétriques à 5% de risque
+# à partir des écarts-types estimés :
+cat('Intervalles de confiance bootstrap à 95%\n')
+c(shape=c(
+	#borne inférieure
+	lower=(mle$par[1]-qnorm(0.975)*et1),
+	#borne supérieure
+	upper=(mle$par[1]+qnorm(0.975)*et1)
+	),
+  scale=c(
+	#borne inférieure
+	lower=(mle$par[2]-qnorm(0.975)*et2),
+	#borne supérieure
+	upper=(mle$par[2]+qnorm(0.975)*et2)
+	)
+  )
+cat('\n')
+
+# Question 4
+# ==========
+
+# On estime l'information de Fischer en moyennant la hessienne de la
+# vraisemblance au point du MLE sur le jeu de données.
+# Ici, on calcule numériquemant la hessienne
 
 library(pracma)
 Ifisher=function(x=velocite){
   
-  nll<-function(theta,x){
-  
-     a<-theta[1]
-     s<-theta[2]
-     (a*log(s)+lgamma(a) -(a-1)*log(x)+x/s)
-  
-  }
+	# negative log-likelihood en un seul point
+	nll<-function(theta,x){
+		a<-theta[1]
+		s<-theta[2]
+		(a*log(s)+lgamma(a) -(a-1)*log(x)+x/s)
+	}
 
-c(shape=mean(sapply( x,function (x ) hessian(function(theta) nll(theta,x),mle$par)[1,1])),scale=mean(sapply( x,function (x ) hessian(function(theta) nll(theta,x),mle$par)[2,2])))
-    
+	# Hessienne
+	Hflat = rowMeans(
+		sapply(
+			x,
+			function(x) hessian(function(theta) nll(theta,x), mle$par)
+			)
+		)
+	matrix(Hflat, nrow=2)
 }
-Ifisher()
-sqrt(1/Ifisher())
+cat('Information de Fisher estimée\n')
+If = Ifisher()
+If
+cat('\n')
 
+cat('Covariance estimée de l\'EMV\n')
+C = solve(If)/length(velocite)
+C
+cat('\n')
+
+cat('Écarts-type marginaux estimés\n')
+c(shape=sqrt(C[1,1]), scale=sqrt(C[2,2]))
+cat('\n')
